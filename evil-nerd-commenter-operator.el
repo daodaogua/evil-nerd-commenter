@@ -143,6 +143,26 @@
       (setq rlt (cons b e))))
     rlt))
 
+(defun evilnc--get-longest-line-end(b e)
+  (let* ((line-len 0)
+         ch
+         tmp
+         (rlt e))
+    (while (< b e)
+      (setq b (+ b 1))
+      (save-excursion
+        (goto-char b)
+        (setq ch (following-char))
+        (when (or (= ch 10) (= ch 11))
+          (setq tmp (- (line-end-position)
+                       (line-beginning-position)))
+
+          (message "tmp=%s" tmp)
+          (when (> tmp line-len)
+            (setq line-len tmp)
+            (setq rlt (line-end-position))))))
+    rlt))
+
 (defun evilnc-adjusted-comment-end (b e)
   (let* ((next-end-char (evilnc-get-char (- e 2)))
          (end-char (evilnc-get-char (- e 1))))
@@ -226,7 +246,12 @@
                                                             offset-e))
                             b))
             (setq block-e e)))
-          (evil-range block-b block-e 'block :expanded t))))
+
+          (message "b=%s e=%s block-b=%s block-e=%s max=%s" b e block-b block-e (evilnc--get-longest-line-end b e))
+          ;; block select the longest line at first
+          (evil-range b e 'block :expanded t)
+          ;; then move the block end
+          )))
      (t
       (error "Not inside a comment.")))))
 
