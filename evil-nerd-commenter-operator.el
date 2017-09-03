@@ -195,8 +195,6 @@ of rectangle text operations (yank, for example).")
         (when (or (= ch 10) (= ch 11))
           (setq tmp (- (line-end-position)
                        (line-beginning-position)))
-
-          (message "tmp=%s" tmp)
           (when (> tmp line-len)
             (setq line-len tmp)
             (setq rlt (line-end-position))))))
@@ -240,9 +238,7 @@ of rectangle text operations (yank, for example).")
              (line-end-of-b (save-excursion
                                     (goto-char b)
                                     (line-end-position)))
-             (offset-b (save-excursion
-                         (goto-char b)
-                         (- b (line-beginning-position))))
+             (offset-b (evil-column b))
              (e (save-excursion
                   (goto-char (cadr bounds))
                   (goto-char (evilnc-adjusted-comment-end b (line-end-position)))
@@ -268,9 +264,7 @@ of rectangle text operations (yank, for example).")
                                     (forward-word 1)
                                     (forward-word -1)
                                     (point)))
-        (setq offset-e (save-excursion
-                         (goto-char e)
-                         (- line-beginning-of-e (line-beginning-position))))
+        (setq offset-e (evil-column e))
         ;; switch start/end of block region if required
         (let* (block-b block-e)
           (cond
@@ -285,8 +279,6 @@ of rectangle text operations (yank, for example).")
                                                             offset-e))
                             b))
             (setq block-e e)))
-
-          (message "b=%s e=%s block-b=%s block-e=%s max=%s" b e block-b block-e (evilnc--get-longest-line-end b e))
           ;; block select the longest line at first
           (evil-range b e 'block :expanded t)
           ;; then move the block end
