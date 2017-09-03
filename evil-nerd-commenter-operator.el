@@ -105,6 +105,7 @@
          (<= e (line-end-position)))))
 
 (defun evilnc-get-comment-bounds ()
+  "Return bounds like (list beg end goal-column)"
   (let* ((b (point))
          (e (point))
          rlt)
@@ -140,7 +141,7 @@
       (if (< b e) (setq rlt (cons b (+ e 1)))))
      (t
       ;; multi-line comment
-      (setq rlt (cons b e))))
+      (setq rlt (list b e))))
     rlt))
 
 (defun evilnc--get-longest-line-end(b e)
@@ -205,7 +206,7 @@
                          (goto-char b)
                          (- b (line-beginning-position))))
              (e (save-excursion
-                  (goto-char (cdr bounds))
+                  (goto-char (cadr bounds))
                   (goto-char (evilnc-adjusted-comment-end b (line-end-position)))
                   (point)))
              line-beginning-of-e
@@ -261,7 +262,7 @@
     (cond
      (bounds
       (let* ((b (car bounds))
-             (e (cdr bounds)))
+             (e (cadr bounds)))
         (evil-range b e 'exclusive :expanded t)))
      (t
       (error "Not inside a comment.")))))
