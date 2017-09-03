@@ -46,7 +46,44 @@
     perl-mode
     php-mode
     swift-mode
-    web-mode))
+    web-mode)
+  "Major modes using C comment syntax")
+
+(defvar evilnc-temporary-goal-column 0
+  "Value passed to `temporary-goal-column' which specify the right edge
+of rectangle text operations (yank, for example).")
+
+(defadvice evil-visual-highlight-block (around evil-visual-highlight-block-hack activate)
+  ;; (setq this-command 'next-line)
+  ad-do-it
+  ;; (message "evil-visual-block-overlays=%s" evil-visual-block-overlays)
+  ;; (setq this-command tmp-command)
+  ;; (setq temporary-goal-column tmp)
+  (when (eq this-command 'evilnc-inner-comment)
+    (dolist (overlay evil-visual-block-overlays)
+      (let* ((b (overlay-start overlay))
+             (e (save-excursion
+                  (goto-char (overlay-end overlay))
+                  (line-end-position)))
+             col)
+        (setq col (evil-column e))
+        (if (> col evilnc-temporary-goal-column)
+            (setq evilnc-temporary-goal-column col))
+        (move-overlay overlay b e)))))
+
+(defadvice evil-apply-on-block (around evil-apply-on-block-around-hack activate)
+  (let* ((tmp-command last-command))
+    ;; force `evil-apply-on-block' use our temporary-goal-column
+    (when (> evilnc-temporary-goal-column 0)
+      (setq temporary-goal-column (max temporary-goal-column
+                                       evilnc-temporary-goal-column))
+      ;; Read `evil-apply-on-block'. Note `temporary-goal-column' is used
+      ;; if and only if `last-command' is `next-line' or `previous-line'
+      (setq last-command 'next-line))
+    ad-do-it
+    ;; restore last command
+    (setq last-command tmp-command)
+    (setq evilnc-temporary-goal-column 0)))
 
 (evil-define-operator evilnc-comment-operator (beg end type)
   "Comments text from BEG to END with TYPE."
@@ -108,6 +145,7 @@
   "Return bounds like (list beg end goal-column)"
   (let* ((b (point))
          (e (point))
+         (col 0)
          rlt)
     ;; extend begin
     (while (evilnc-is-comment (- b 1))
