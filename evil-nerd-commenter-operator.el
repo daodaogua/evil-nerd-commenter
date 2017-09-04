@@ -264,7 +264,7 @@ of rectangle text operations (yank, for example).")
                                     (forward-word 1)
                                     (forward-word -1)
                                     (point)))
-        (setq offset-e (evil-column e))
+        (setq offset-e (evil-column line-beginning-of-e))
         ;; switch start/end of block region if required
         (let* (block-b block-e)
           (cond
@@ -280,9 +280,9 @@ of rectangle text operations (yank, for example).")
                             b))
             (setq block-e e)))
           ;; block select the longest line at first
-          (evil-range b e 'block :expanded t)
-          ;; then move the block end
-          )))
+          (if (> offset-b offset-e)
+              (setq b (- b (- offset-b offset-e))))
+          (evil-range b e 'block :expanded t))))
      (t
       (error "Not inside a comment.")))))
 
