@@ -172,8 +172,7 @@ See http://lists.gnu.org/archive/html/bug-gnu-emacs/2013-03/msg00891.html."
     ;; My regex makes sure (match-end 1) return the position of comment starter
     (if (and (boundp 'comment-use-syntax) (not comment-use-syntax))
         ;; Maybe autoconf.el will (setq comment-use-syntax t) in the future?
-        (setq comment-start-skip "^\\(\\s*\\)\\(dnl\\|#\\) +"))
-    )
+        (setq comment-start-skip "^\\(\\s*\\)\\(dnl\\|#\\) +")))
    ((eq major-mode 'haml-mode)
     (setq comment-use-syntax nil)
     (setq comment-start "-# ")
@@ -312,7 +311,7 @@ Code snippets embedded in Org-mode is identified and right `major-mode' is used.
       (funcall fn beg end)
       (goto-char pos))
 
-    ;; turn off  3rd party language's major-mode temporarily and clean the shit
+    ;; turn off 3rd party language's major-mode temporarily and clean the shit
     (when lang-f
       ;; avoid org file automatically collapsed
       (setq pos (point))
@@ -418,6 +417,12 @@ DO-COMMENT decides we comment or uncomment."
       (defalias 'web-mode-comment-elixir-block 'web-mode-comment-erb-block)
       (defalias 'web-mode-uncomment-elixir-block 'web-mode-uncomment-erb-block))
     (evilnc--web-mode-comment-or-uncomment beg end))
+   ((eq major-mode 'rjsx-mode)
+    (message "beg=%s end=%s" beg end)
+    (let* ((comment-start "{/* ")
+           (comment-end " */}"))
+      ;; TODO, need override `comment-region-function' and `uncomment-region-function'
+     (evilnc--working-on-region beg end 'comment-or-uncomment-region)))
    (t
     (evilnc--working-on-region beg end 'comment-or-uncomment-region))))
 
