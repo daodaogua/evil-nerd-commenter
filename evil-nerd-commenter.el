@@ -831,6 +831,55 @@ if NO-EMACS-KEYBINDINGS is t, we don't define keybindings in EMACS mode."
            (re (concat "^[ \t]*" (regexp-quote evilnc-html-comment-start))))
       (string-match-p re line))))
 
+(defun evilnc-sgml-is-arrow ()
+  "Current string under cursor is arrow like \"=>\"."
+  (if (and (eq (following-char) ?>)
+           (save-excursion (forward-char -1) (eq (following-char) ?=)))
+      t))
+
+(defun evilnc-sgml-skip-tag-forward (arg)
+  "Skip to end of tag or matching closing tag if present.
+With prefix argument ARG, repeat this ARG times.
+Return t if after a closing tag."
+  (interactive "p")
+  ;; FIXME: Use sgml-get-context or something similar.
+  ;; It currently might jump to an unrelated </P> if the <P>
+  ;; we're skipping has no matching </P>.
+  (let ((return t))
+    (with-syntax-table sgml-tag-syntax-table
+      (while (>= arg 1)
+        (skip-chars-forward "^<>")
+        (while (and (< (point) (1- (point-max)))
+                    (evilnc-sgml-is-arrow)
+                    (progn (forward-char) (> (skip-chars-forward "^<>") 0))))
+        (message "====(point)=%d" (point))
+        (if (eq (following-char) ?>)
+            ;; need change `forward-list' and `up-list'
+            (up-list -1))
+        (if (looking-at "<\\([^/ \n\t>]+\\)\\([^>]*[^/>]\\)?>")
+            ;; start tag, skip any nested same pairs _and_ closing tag
+            (let ((case-fold-search t)
+                  (re (concat "</?" (regexp-quote (match-string 1))
+                              ;; Ignore empty tags like <foo/>.
+                              "\\([^>]*[^/>]\\)?>"))
+                  point close)
+              (forward-list 1)
+              (setq point (point))
+              ;; FIXME: This re-search-forward will mistakenly match
+              ;; tag-like text inside attributes.
+              (while (and (re-search-forward re nil t)
+                          (not (setq close
+                                     (eq (char-after (1+ (match-beginning 0))) ?/)))
+                          (goto-char (match-beginning 0))
+                          (sgml-skip-tag-forward 1))
+                (setq close nil))
+	          (unless close
+		        (goto-char point)
+		        (setq return nil)))
+	      (forward-list 1))
+	    (setq arg (1- arg)))
+      return)))
+
 ;;;###autoload
 (defun evilnc-comment-or-uncomment-html-tag ()
   "Comment or uncomment html tag(s).
@@ -865,7 +914,7 @@ different syntax."
         (sgml-skip-tag-backward 1)
         (setq beg (point))
         (setq beg-line-beg (line-beginning-position))
-        (sgml-skip-tag-forward 1)
+        (evilnc-sgml-skip-tag-forward 1)
         (setq end (point))
         (setq end-line-end (line-end-position)))))
 
